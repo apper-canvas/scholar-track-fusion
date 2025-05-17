@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { getIcon } from '../../utils/iconUtils';
 import { scoreToLetter } from '../../utils/gradeUtils';
 
-const AddEditGrade = ({ students, courses, onSaveGrade, editingGrade, existingGrades }) => {
+const AddEditGrade = ({ students, courses, onSaveGrade, editingGrade, existingGrades, isSubmitting }) => {
   const [formState, setFormState] = useState({
     studentId: '',
     courseId: '',
@@ -20,12 +20,12 @@ const AddEditGrade = ({ students, courses, onSaveGrade, editingGrade, existingGr
   useEffect(() => {
     if (editingGrade) {
       setFormState({
-        studentId: editingGrade.studentId,
-        courseId: editingGrade.courseId,
+        studentId: editingGrade.studentId.toString(),
+        courseId: editingGrade.courseId.toString(),
         term: editingGrade.term,
         letterGrade: editingGrade.letterGrade,
         numericalGrade: editingGrade.numericalGrade,
-        comments: editingGrade.comments,
+        comments: editingGrade.comments || '',
         date: editingGrade.date
       });
       
@@ -60,8 +60,9 @@ const AddEditGrade = ({ students, courses, onSaveGrade, editingGrade, existingGr
     if (formState.studentId && formState.courseId && formState.term) {
       const isDuplicate = existingGrades.some(grade => 
         !editingGrade || grade.id !== editingGrade.id // Skip the current grade if editing
+        && !editingGrade || grade.Id !== editingGrade.Id // Support both id and Id fields
       ) && existingGrades.some(grade => 
-        grade.studentId === parseInt(formState.studentId) && 
+        grade.studentId?.toString() === formState.studentId && 
         grade.courseId === parseInt(formState.courseId) && 
         grade.term === formState.term
       );
@@ -155,7 +156,7 @@ const AddEditGrade = ({ students, courses, onSaveGrade, editingGrade, existingGr
             >
               <option value="">Select Student</option>
               {students.filter(s => s.status === 'active').map(student => (
-                <option key={student.id} value={student.id}>
+                <option key={student.Id || student.id} value={student.Id || student.id}>
                   {student.firstName} {student.lastName}
                 </option>
               ))}
@@ -175,7 +176,7 @@ const AddEditGrade = ({ students, courses, onSaveGrade, editingGrade, existingGr
             >
               <option value="">Select Course</option>
               {courses.map(course => (
-                <option key={course.id} value={course.id}>
+                <option key={course.Id || course.id} value={course.Id || course.id}>
                   {course.code} - {course.name}
                 </option>
               ))}
@@ -324,6 +325,7 @@ const AddEditGrade = ({ students, courses, onSaveGrade, editingGrade, existingGr
             whileTap={{ scale: 0.98 }}
             type="submit"
             className="btn btn-primary"
+            disabled={isSubmitting}
           >
             <CheckIcon size={18} className="mr-1" />
             {editingGrade ? 'Update Grade' : 'Save Grade'}

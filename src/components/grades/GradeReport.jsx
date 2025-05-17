@@ -33,7 +33,7 @@ const GradeReport = ({ grades, students, courses }) => {
     
     // Create an array of grades with course information
     const gradesWithCourses = filteredGrades.map(grade => {
-      const course = courses.find(c => c.id === grade.courseId);
+      const course = courses.find(c => (c.Id || c.id) === grade.courseId);
       return {
         ...grade,
         courseName: course ? course.name : 'Unknown Course',
@@ -66,7 +66,7 @@ const GradeReport = ({ grades, students, courses }) => {
       }
     });
     
-    const student = students.find(s => s.id === studentId);
+    const student = students.find(s => (s.Id || s.id) === studentId);
     
     return {
       student,
@@ -165,7 +165,7 @@ const GradeReport = ({ grades, students, courses }) => {
           >
             <option value="">Choose a student</option>
             {students.filter(s => s.status === 'active').map(student => (
-              <option key={student.id} value={student.id}>
+              <option key={student.Id || student.id} value={student.Id || student.id}>
                 {student.firstName} {student.lastName}
               </option>
             ))}
@@ -301,7 +301,7 @@ const GradeReport = ({ grades, students, courses }) => {
                 <tbody className="bg-white dark:bg-surface-800 divide-y divide-surface-200 dark:divide-surface-700">
                   {reportData.grades.map((grade, index) => (
                     <tr 
-                      key={grade.id}
+                      key={grade.Id || grade.id}
                       className={index % 2 === 0 ? 'bg-white dark:bg-surface-800' : 'bg-surface-50 dark:bg-surface-700/30'}
                     >
                       <td className="px-6 py-3 whitespace-nowrap">

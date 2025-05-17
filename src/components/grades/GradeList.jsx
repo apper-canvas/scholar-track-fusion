@@ -37,13 +37,13 @@ const GradeList = ({ grades, students, courses, onEditGrade, onDeleteGrade }) =>
     return grades
       .filter(grade => {
         // Filter by search term
-        const student = students.find(s => s.id === grade.studentId);
-        const course = courses.find(c => c.id === grade.courseId);
+        const student = students.find(s => (s.Id || s.id) === grade.studentId);
+        const course = courses.find(c => (c.Id || c.id) === grade.courseId);
         
         if (!student || !course) return false;
         
         const studentName = `${student.firstName} ${student.lastName}`.toLowerCase();
-        const courseName = `${course.code} ${course.name}`.toLowerCase();
+        const courseName = `${course.code} ${course.Name || course.name}`.toLowerCase();
         const searchLower = searchTerm.toLowerCase();
         
         const matchesSearch = 
@@ -69,14 +69,14 @@ const GradeList = ({ grades, students, courses, onEditGrade, onDeleteGrade }) =>
         let comparison = 0;
         
         if (sortBy === 'student') {
-          const studentA = students.find(s => s.id === a.studentId);
-          const studentB = students.find(s => s.id === b.studentId);
+          const studentA = students.find(s => (s.Id || s.id) === a.studentId);
+          const studentB = students.find(s => (s.Id || s.id) === b.studentId);
           if (studentA && studentB) {
             comparison = `${studentA.lastName}${studentA.firstName}`.localeCompare(`${studentB.lastName}${studentB.firstName}`);
           }
         } else if (sortBy === 'course') {
-          const courseA = courses.find(c => c.id === a.courseId);
-          const courseB = courses.find(c => c.id === b.courseId);
+          const courseA = courses.find(c => (c.Id || c.id) === a.courseId);
+          const courseB = courses.find(c => (c.Id || c.id) === b.courseId);
           if (courseA && courseB) {
             comparison = courseA.code.localeCompare(courseB.code);
           }
@@ -141,13 +141,13 @@ const GradeList = ({ grades, students, courses, onEditGrade, onDeleteGrade }) =>
               >
                 <option value="">Select {filterBy}</option>
                 {filterBy === 'student' && students.map(student => (
-                  <option key={student.id} value={student.id}>
+                  <option key={student.Id || student.id} value={student.Id || student.id}>
                     {student.firstName} {student.lastName}
                   </option>
                 ))}
                 {filterBy === 'course' && courses.map(course => (
-                  <option key={course.id} value={course.id}>
-                    {course.code} - {course.name}
+                  <option key={course.Id || course.id} value={course.Id || course.id}>
+                    {course.code} - {course.Name || course.name}
                   </option>
                 ))}
                 {filterBy === 'term' && terms.map(term => (
@@ -231,14 +231,14 @@ const GradeList = ({ grades, students, courses, onEditGrade, onDeleteGrade }) =>
             </thead>
             <tbody className="bg-white dark:bg-surface-800 divide-y divide-surface-200 dark:divide-surface-700">
               {filteredAndSortedGrades.map((grade, index) => {
-                const student = students.find(s => s.id === grade.studentId);
-                const course = courses.find(c => c.id === grade.courseId);
+                const student = students.find(s => (s.Id || s.id) === grade.studentId);
+                const course = courses.find(c => (c.Id || c.id) === grade.courseId);
                 
                 if (!student || !course) return null;
                 
                 return (
                   <motion.tr 
-                    key={grade.id}
+                    key={grade.Id || grade.id}
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
@@ -287,7 +287,7 @@ const GradeList = ({ grades, students, courses, onEditGrade, onDeleteGrade }) =>
                         <EditIcon size={16} />
                       </button>
                       <button 
-                        onClick={() => handleDeleteGrade(grade.id)}
+                        onClick={() => handleDeleteGrade(grade.Id || grade.id)}
                         className="text-secondary hover:text-secondary-dark"
                         title="Delete grade"
                       >

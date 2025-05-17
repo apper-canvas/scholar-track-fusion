@@ -2,17 +2,19 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { getIcon } from '../utils/iconUtils';
+import { fetchStudents, createStudent, updateStudent, deleteStudent } from '../services/studentService';
 
 const MainFeature = () => {
-  const [students, setStudents] = useState(() => {
-    const savedStudents = localStorage.getItem('students');
-    return savedStudents 
-      ? JSON.parse(savedStudents) 
-      : [
-          { id: 1, firstName: 'Emma', lastName: 'Wilson', email: 'emma.w@example.com', grade: '11th', status: 'active' },
-          { id: 2, firstName: 'James', lastName: 'Miller', email: 'james.m@example.com', grade: '10th', status: 'active' },
-          { id: 3, firstName: 'Ava', lastName: 'Thompson', email: 'ava.t@example.com', grade: '12th', status: 'inactive' },
-        ];
+  const [students, setStudents] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [isFormVisible, setIsFormVisible] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [newStudent, setNewStudent] = useState({
   });
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,11 +27,32 @@ const MainFeature = () => {
     grade: '',
     status: 'active',
   });
-  const [statusFilter, setStatusFilter] = useState('all');
-
+  // Load students from API on component mount
   useEffect(() => {
-    localStorage.setItem('students', JSON.stringify(students));
-  }, [students]);
+    const loadStudents = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await fetchStudents();
+        setStudents(data);
+      } catch (err) {
+        console.error('Failed to fetch students:', err);
+        setError('Failed to load students. Please try again later.');
+        toast.error('Failed to load students');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadStudents();
+  }, []);
+  
+  // Filter students whenever filters or student data changes
+  useEffect(() => {
+    filterStudents();
+  }, [students, searchTerm, statusFilter]);
+  
+  const SearchIcon = getIcon('Search');
 
   const SearchIcon = getIcon('Search');
   const UserPlusIcon = getIcon('UserPlus');
@@ -40,7 +63,22 @@ const MainFeature = () => {
   const XIcon = getIcon('X');
   const FilterIcon = getIcon('Filter');
 
-  const handleAddStudent = (e) => {
+  const filterStudents = () => {
+    const filtered = students.filter(student => {
+      const matchesSearch = 
+        student.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        student.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.email?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+      const matchesFilter = statusFilter === 'all' || student.status === statusFilter;
+      
+      return matchesSearch && matchesFilter;
+    });
+    
+    setFilteredStudents(filtered);
+  };
+
+  const handleAddStudent = async (e) => {
     e.preventDefault();
     
     // Validate form
@@ -53,25 +91,36 @@ const MainFeature = () => {
       toast.error("Please enter a valid email address");
       return;
     }
-
-    if (editingStudent) {
-      // Update existing student
-      const updatedStudents = students.map(student => 
-        student.id === editingStudent.id ? { ...newStudent, id: student.id } : student
-      );
-      setStudents(updatedStudents);
-      toast.success("Student updated successfully");
-    } else {
-      // Add new student
-      const id = students.length > 0 ? Math.max(...students.map(s => s.id)) + 1 : 1;
-      setStudents([...students, { id, ...newStudent }]);
-      toast.success("New student added successfully");
-    }
     
-    // Reset form
-    setNewStudent({ firstName: '', lastName: '', email: '', grade: '', status: 'active' });
-    setIsFormVisible(false);
-    setEditingStudent(null);
+    setIsSubmitting(true);
+    
+    try {
+      if (editingStudent) {
+        // Update existing student
+        await updateStudent(editingStudent.Id, newStudent);
+        // Refresh the student list
+        const updatedStudents = await fetchStudents();
+        setStudents(updatedStudents);
+        toast.success("Student updated successfully");
+      } else {
+        // Add new student
+        await createStudent(newStudent);
+        // Refresh the student list
+        const updatedStudents = await fetchStudents();
+        setStudents(updatedStudents);
+        toast.success("New student added successfully");
+      }
+      
+      // Reset form
+      setNewStudent({ firstName: '', lastName: '', email: '', grade: '', status: 'active' });
+      setIsFormVisible(false);
+      setEditingStudent(null);
+    } catch (err) {
+      console.error(err);
+      toast.error(editingStudent ? "Failed to update student" : "Failed to add student");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEditStudent = (student) => {
@@ -80,24 +129,21 @@ const MainFeature = () => {
     setIsFormVisible(true);
   };
 
-  const handleDeleteStudent = (id) => {
+  const handleDeleteStudent = async (id) => {
     if (confirm("Are you sure you want to delete this student?")) {
-      setStudents(students.filter(student => student.id !== id));
-      toast.success("Student deleted successfully");
+      try {
+        await deleteStudent(id);
+        // Refresh the student list
+        const updatedStudents = await fetchStudents();
+        setStudents(updatedStudents);
+        toast.success("Student deleted successfully");
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to delete student");
+      }
     }
   };
 
-  const filteredStudents = students.filter(student => {
-    const matchesSearch = 
-      student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchTerm.toLowerCase());
-      
-    const matchesFilter = statusFilter === 'all' || student.status === statusFilter;
-    
-    return matchesSearch && matchesFilter;
-  });
-  
   const clearForm = () => {
     setNewStudent({ firstName: '', lastName: '', email: '', grade: '', status: 'active' });
     setEditingStudent(null);
@@ -270,7 +316,7 @@ const MainFeature = () => {
                   <button
                     type="submit"
                     className="btn btn-primary"
-                  >
+                    disabled={isSubmitting}>
                     {editingStudent ? 'Update Student' : 'Add Student'}
                   </button>
                 </div>
@@ -280,6 +326,24 @@ const MainFeature = () => {
         )}
       </AnimatePresence>
 
+      {isLoading ? (
+        <div className="bg-white dark:bg-surface-800 p-10 rounded-xl border border-surface-200 dark:border-surface-700 flex justify-center items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      ) : error ? (
+        <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 p-10 text-center">
+          <p className="text-red-500 dark:text-red-400">{error}</p>
+          <button 
+            onClick={() => {
+              setIsLoading(true);
+              fetchStudents()
+                .then(data => setStudents(data))
+                .catch(err => setError('Failed to load students. Please try again later.'))
+                .finally(() => setIsLoading(false));
+            }}
+            className="mt-4 btn btn-primary">Retry</button>
+        </div>
+      ) : (
       <div className="bg-white dark:bg-surface-800 overflow-hidden rounded-xl border border-surface-200 dark:border-surface-700">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-surface-200 dark:divide-surface-700">
@@ -306,7 +370,7 @@ const MainFeature = () => {
               {filteredStudents.length > 0 ? (
                 filteredStudents.map((student, index) => (
                   <motion.tr 
-                    key={student.id}
+                    key={student.Id || index}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
@@ -351,7 +415,7 @@ const MainFeature = () => {
                         <EditIcon size={18} />
                       </button>
                       <button 
-                        onClick={() => handleDeleteStudent(student.id)}
+                        onClick={() => handleDeleteStudent(student.Id)}
                         className="text-secondary hover:text-secondary-dark"
                       >
                         <TrashIcon size={18} />
@@ -372,6 +436,7 @@ const MainFeature = () => {
           </table>
         </div>
       </div>
+      )}
     </div>
   );
 };
