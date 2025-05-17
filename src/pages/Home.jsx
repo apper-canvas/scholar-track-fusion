@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import MainFeature from '../components/MainFeature';
+import GradeManagement from '../components/grades/GradeManagement';
 import { getIcon } from '../utils/iconUtils';
 
 function Home() {
@@ -93,11 +94,7 @@ function Home() {
           )}
           
           {activeTab === 'grades' && (
-            <div className="p-4 text-center">
-              <p className="text-surface-500 dark:text-surface-400">
-                Grade management features are coming soon.
-              </p>
-            </div>
+            <GradeManagement />
           )}
         </div>
       </section>

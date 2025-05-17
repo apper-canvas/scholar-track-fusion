@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import { Sun, Moon } from 'lucide-react';
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
+import GradeManagement from './components/grades/GradeManagement';
 import { motion } from 'framer-motion';
 
 function App() {
@@ -52,6 +53,7 @@ function App() {
       <main className="container mx-auto px-4 pt-20 pb-12">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/grades" element={<GradeManagement />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
